@@ -9,7 +9,7 @@ A modern, modular script management system for Windows using [AutoHotkey v2.0](h
 - **Tray menu** for quick access to the Script Manager, scripts folder, reload, and exit.
 - **Script Manager GUI** to enable/disable, edit, or create scripts.
 - **Dynamic script loading**: Only enabled scripts are loaded via a generated include list.
-- **Works with any portable AHK scripts**—bring your own, or use our [AHK Scripts Collection](https://github.com/magfje/ahk-scripts).
+- **Works with any portable AHK scripts**—bring your own, or use my [AHK Scripts Collection](https://github.com/magfje/ahk-scripts).
 
 ---
 
