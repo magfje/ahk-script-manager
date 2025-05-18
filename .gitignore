@@ -1,0 +1,28 @@
+# AutoHotkey Script Manager .gitignore
+
+# Ignore generated include list
+IncludeList.ahk
+
+# Ignore backup and temp files
+*.bak
+*.tmp
+*.temp
+*~
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore VSCode and other editor settings
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Ignore log files
+*.log
+
+# Ignore compiled scripts (if any)
+*.exe
+
+# Ignore user-specific config (add more as needed) 
