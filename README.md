@@ -4,6 +4,8 @@ A modern, modular script management system for Windows using [AutoHotkey v2.0](h
 
 ---
 
+![{5879AA46-49AC-4A64-8C34-1D3C206D709C}](https://github.com/user-attachments/assets/4b68c8a5-d2fc-4018-a5ec-2dee9ada839f)
+
 ## Features
 
 - **Tray menu** for quick access to the Script Manager, scripts folder, reload, and exit.
@@ -70,3 +72,5 @@ A modern, modular script management system for Windows using [AutoHotkey v2.0](h
 - Add your own `.ahk` scripts to the `Scripts/` folder.
 - Use the Script Manager to enable/disable or edit them.
 - The Script Manager will update `IncludeList.ahk` and reload the main script as needed.
+
+
