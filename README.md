@@ -4,7 +4,8 @@ A modular script management system for Windows using [AutoHotkey v2.0](https://w
 
 ---
 
-![{5879AA46-49AC-4A64-8C34-1D3C206D709C}](https://github.com/user-attachments/assets/4b68c8a5-d2fc-4018-a5ec-2dee9ada839f)
+![{8004FD3C-0E60-437D-B1F2-E634A14ECF57}](https://github.com/user-attachments/assets/fd63c7a4-e65e-4c89-a184-c82b8e3bc2f8)
+
 
 ## Features
 
