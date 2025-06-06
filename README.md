@@ -1,6 +1,6 @@
 # AutoHotkey Script Manager
 
-A modern, modular script management system for Windows using [AutoHotkey v2.0](https://www.autohotkey.com/). Easily enable, disable, and edit multiple AHK scripts from a single GUI.
+A modular script management system for Windows using [AutoHotkey v2.0](https://www.autohotkey.com/). Easily enable, disable, and edit multiple AHK scripts from a single GUI.
 
 ---
 
@@ -8,9 +8,9 @@ A modern, modular script management system for Windows using [AutoHotkey v2.0](h
 
 ## Features
 
-- **Tray menu** for quick access to the Script Manager, scripts folder, reload, and exit.
+- **Single Tray menu** avoid having multiple traiicons and get quick access to the Script Manager, scripts folder, reload, and exit.
 - **Script Manager GUI** to enable/disable, edit, or create scripts.
-- **Dynamic script loading**: Only enabled scripts are loaded via a generated include list.
+- **Dynamic script loading**: Only enabled scripts are loaded via a generated include list, specify a folder or single scripts.
 - **Works with any portable AHK scripts**—bring your own, or use my [AHK Scripts Collection](https://github.com/magfje/ahk-scripts).
 
 ---
@@ -24,7 +24,7 @@ A modern, modular script management system for Windows using [AutoHotkey v2.0](h
 ├── IncludeList.ahk          # Auto-generated list of enabled scripts
 ├── main.ico                 # Custom tray icon
 └── Scripts/
-    └── (your .ahk scripts go here)
+    └── (*optional* your .ahk scripts go here)
 ```
 
 ---
@@ -44,18 +44,18 @@ A modern, modular script management system for Windows using [AutoHotkey v2.0](h
 4. **Run `MainScript.ahk`** to start the system.
 5. **Use the tray icon** to open the Script Manager, scripts folder, reload scripts, or exit.
 6. **Manage scripts** via the Script Manager GUI:
-    - Enable/disable scripts (updates `IncludeList.ahk`)
+    - Enable/disable scripts
     - Edit scripts in Notepad
     - Create new scripts from a template
     - Open the scripts folder
     - Reloads the main script to apply changes
+    - Add "external" scripts
 
 ---
 
 ## Using with the AHK Scripts Collection
 
 - Visit the [AHK Scripts Collection](https://github.com/magfje/ahk-scripts) for a library of portable, ready-to-use scripts.
-- Copy or symlink any scripts you want into your `Scripts/` folder.
 - Enable or edit them using the Script Manager GUI.
 
 ---
@@ -69,8 +69,7 @@ A modern, modular script management system for Windows using [AutoHotkey v2.0](h
 
 ## Customization
 
-- Add your own `.ahk` scripts to the `Scripts/` folder.
+- Specify a folder to load all scripts in the folder or add your own `.ahk` scripts.
 - Use the Script Manager to enable/disable or edit them.
-- The Script Manager will update `IncludeList.ahk` and reload the main script as needed.
 
 

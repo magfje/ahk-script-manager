@@ -26,3 +26,4 @@ Thumbs.db
 *.exe
 
 # Ignore user-specific config (add more as needed) 
+test.ahk

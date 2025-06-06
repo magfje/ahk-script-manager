@@ -16,6 +16,7 @@ mainScriptFile := A_ScriptDir "\MainScript.ahk"
 ; Global variables
 global scriptsList := Map()
 global enabledScripts := Map()
+global externalScripts := Map()  ; New map for external scripts
 global mainScriptPID := 0
 
 ; Create GUI
@@ -45,19 +46,25 @@ scriptListView := mainGui.Add("ListView", "x20 y145 w560 h150", ["Status", "Name
 scriptListView.OnEvent("DoubleClick", ScriptListClick)
 
 ; Action Buttons (row below script list)
-reloadBtn := mainGui.Add("Button", "x20 y305 w110", "Reload Scripts")
+reloadBtn := mainGui.Add("Button", "x20 y305 w100", "Reload Scripts")
 reloadBtn.OnEvent("Click", ReloadScripts)
 reloadBtn.ToolTip := "Scan and reload all scripts in the folder"
-toggleBtn := mainGui.Add("Button", "x140 y305 w110", "Toggle Script")
+toggleBtn := mainGui.Add("Button", "x130 y305 w100", "Toggle Script")
 toggleBtn.OnEvent("Click", ToggleScript)
 toggleBtn.ToolTip := "Enable or disable the selected script"
-editBtn := mainGui.Add("Button", "x260 y305 w110", "Edit Script")
+editBtn := mainGui.Add("Button", "x240 y305 w100", "Edit Script")
 editBtn.OnEvent("Click", EditScript)
 editBtn.ToolTip := "Edit the selected script in Notepad"
-createScriptBtn := mainGui.Add("Button", "x380 y305 w140", "Create New Script")
+createScriptBtn := mainGui.Add("Button", "x350 y305 w100", "Create New Script")
 createScriptBtn.OnEvent("Click", CreateNewScript)
 createScriptBtn.ToolTip := "Create a new script from a template"
-openFolderBtn := mainGui.Add("Button", "x530 y305 w60", "Open Folder")
+includeExternalBtn := mainGui.Add("Button", "x460 y305 w100", "Include External")
+includeExternalBtn.OnEvent("Click", IncludeExternalScript)
+includeExternalBtn.ToolTip := "Include a script from any location"
+removeScriptBtn := mainGui.Add("Button", "x570 y305 w100", "Remove Script")
+removeScriptBtn.OnEvent("Click", RemoveScript)
+removeScriptBtn.ToolTip := "Remove the selected external script"
+openFolderBtn := mainGui.Add("Button", "x680 y305 w100", "Open Folder")
 openFolderBtn.OnEvent("Click", OpenScriptsFolder)
 openFolderBtn.ToolTip := "Open the scripts folder in Explorer"
 
@@ -68,17 +75,32 @@ statusBar := mainGui.AddStatusBar()
 ResizeControls(*) {
     x := 0, y := 0, w := 0, h := 0
     mainGui.GetClientPos(&x, &y, &w, &h)
+
+    ; Calculate button positions
+    buttonWidth := 100
+    buttonSpacing := 10
+    buttonY := h - 90
+    totalButtons := 7
+    totalWidth := (buttonWidth * totalButtons) + (buttonSpacing * (totalButtons - 1))
+    startX := (w - totalWidth) / 2  ; Center the buttons
+
+    ; Update positions
     lblTitle.Move(, , w - 40)
     gbFolder.Move(, , w - 20)
     scriptsFolderEdit.Move(, , w - 200)
     changeFolderBtn.Move(w - 90)
     gbScripts.Move(, , w - 20, h - 230)
     scriptListView.Move(, , w - 40, h - 260)
-    reloadBtn.Move(20, h - 90)
-    toggleBtn.Move(140, h - 90)
-    editBtn.Move(260, h - 90)
-    createScriptBtn.Move(380, h - 90)
-    openFolderBtn.Move(w - 70, h - 90)
+
+    ; Position buttons with equal spacing
+    reloadBtn.Move(startX, buttonY)
+    toggleBtn.Move(startX + buttonWidth + buttonSpacing, buttonY)
+    editBtn.Move(startX + (buttonWidth + buttonSpacing) * 2, buttonY)
+    createScriptBtn.Move(startX + (buttonWidth + buttonSpacing) * 3, buttonY)
+    includeExternalBtn.Move(startX + (buttonWidth + buttonSpacing) * 4, buttonY)
+    removeScriptBtn.Move(startX + (buttonWidth + buttonSpacing) * 5, buttonY)
+    openFolderBtn.Move(startX + (buttonWidth + buttonSpacing) * 6, buttonY)
+
     statusBar.Move(, h - 30, w)
 }
 mainGui.OnEvent("Size", ResizeControls)
@@ -86,6 +108,7 @@ mainGui.OnEvent("Size", ResizeControls)
 ; Initialize
 statusBar.SetText("Starting up...")
 CheckMainScript()
+LoadExternalScriptsFromConfig()  ; Load external scripts before scanning
 ScanScripts()
 LoadEnabledScriptsFromIncludeFile()
 UpdateListView()
@@ -255,25 +278,39 @@ ScanScripts() {
 UpdateListView() {
     scriptListView.Delete()
 
+    ; Add scripts from main folder
     for scriptName, scriptInfo in scriptsList {
         status := enabledScripts.Has(scriptName) ? "Enabled" : "Disabled"
+        scriptListView.Add("", status, scriptInfo.name, scriptInfo.path)
+    }
+
+    ; Add external scripts
+    for scriptName, scriptInfo in externalScripts {
+        status := enabledScripts.Has(scriptName) ? "Enabled (External)" : "Disabled (External)"
         scriptListView.Add("", status, scriptInfo.name, scriptInfo.path)
     }
 
     loop 3
         scriptListView.ModifyCol(A_Index, "AutoHdr")
 
-    statusBar.SetText("Displaying " . scriptsList.Count . " script(s)")
+    statusBar.SetText("Displaying " . (scriptsList.Count + externalScripts.Count) . " script(s)")
 }
 
 UpdateIncludeFile() {
     includeContent := "; Dynamically generated include file`n"
     includeContent .= "; Don't edit manually - managed by Script Manager`n`n"
 
+    ; Include enabled scripts from main folder
     for scriptName, isEnabled in enabledScripts {
-        if (isEnabled && scriptsList.Has(scriptName)) {
-            scriptPath := scriptsList[scriptName].path
-            includeContent .= "#Include " . scriptPath . "`n"
+        if (isEnabled) {
+            if (scriptsList.Has(scriptName)) {
+                scriptPath := scriptsList[scriptName].path
+                includeContent .= "#Include " . scriptPath . "`n"
+            }
+            else if (externalScripts.Has(scriptName)) {
+                scriptPath := externalScripts[scriptName].path
+                includeContent .= "#Include " . scriptPath . "`n"
+            }
         }
     }
 
@@ -328,13 +365,16 @@ ToggleScript(*) {
     if (scriptName = "")
         return
 
-    if (status = "Disabled") {
+    ; Check if it's an external script
+    isExternal := externalScripts.Has(scriptName)
+
+    if (status = "Disabled" || status = "Disabled (External)") {
         enabledScripts[scriptName] := true
-        scriptListView.Modify(row, "", "Enabled")
+        scriptListView.Modify(row, "", isExternal ? "Enabled (External)" : "Enabled")
         statusBar.SetText("Enabled script: " . scriptName)
     } else {
         enabledScripts.Delete(scriptName)
-        scriptListView.Modify(row, "", "Disabled")
+        scriptListView.Modify(row, "", isExternal ? "Disabled (External)" : "Disabled")
         statusBar.SetText("Disabled script: " . scriptName)
     }
 
@@ -389,6 +429,7 @@ CreateNewScript(*) {
 
 ReloadScripts(*) {
     ScanScripts()
+    ; Note: We don't clear externalScripts on reload
     LoadEnabledScriptsFromIncludeFile()
     UpdateListView()
     UpdateIncludeFile()
@@ -406,4 +447,117 @@ ChangeScriptsFolder(*) {
         scriptsFolderEdit.Value := scriptsFolder
         ReloadScripts()
     }
+}
+
+LoadExternalScriptsFromConfig() {
+    externalScripts.Clear()
+
+    try {
+        ; Read all sections from config file
+        sections := IniRead(configFile)
+        loop parse, sections, "`n" {
+            if (RegExMatch(A_LoopField, "^ExternalScript_(.+)$", &match)) {
+                scriptName := match[1]
+                scriptPath := IniRead(configFile, "ExternalScript_" . scriptName, "Path", "")
+                if (scriptPath != "" && FileExist(scriptPath)) {
+                    externalScripts[scriptName] := { name: scriptName, path: scriptPath }
+                }
+            }
+        }
+        statusBar.SetText("Loaded " . externalScripts.Count . " external scripts from config")
+    } catch as e {
+        statusBar.SetText("Error loading external scripts: " . e.Message)
+    }
+}
+
+SaveExternalScriptsToConfig() {
+    try {
+        ; First, remove all existing external script sections
+        sections := IniRead(configFile)
+        loop parse, sections, "`n" {
+            if (RegExMatch(A_LoopField, "^ExternalScript_(.+)$", &match)) {
+                IniDelete(configFile, "ExternalScript_" . match[1])
+            }
+        }
+
+        ; Then save current external scripts
+        for scriptName, scriptInfo in externalScripts {
+            IniWrite(scriptInfo.path, configFile, "ExternalScript_" . scriptName, "Path")
+        }
+    } catch as e {
+        MsgBox("Error saving external scripts: " . e.Message, "Error", "Icon!")
+    }
+}
+
+IncludeExternalScript(*) {
+    scriptPath := FileSelect(, , "Select AutoHotkey Script", "AutoHotkey Scripts (*.ahk)")
+    if !scriptPath
+        return
+
+    SplitPath(scriptPath, &scriptName)
+    if !scriptName
+        return
+
+    ; Check if script is already included
+    if (externalScripts.Has(scriptName)) {
+        MsgBox("This script is already included!", "Warning", "Icon!")
+        return
+    }
+
+    ; Check if script exists in the main folder
+    if (scriptsList.Has(scriptName)) {
+        MsgBox("A script with this name already exists in the main folder!", "Warning", "Icon!")
+        return
+    }
+
+    ; Add to external scripts
+    externalScripts[scriptName] := { name: scriptName, path: scriptPath }
+
+    ; Enable the script by default
+    enabledScripts[scriptName] := true
+
+    ; Save to config
+    SaveExternalScriptsToConfig()
+
+    UpdateListView()
+    UpdateIncludeFile()
+    RestartMainScript()
+    statusBar.SetText("Added external script: " . scriptName)
+}
+
+RemoveScript(*) {
+    row := scriptListView.GetNext()
+    if (row = 0)
+        return
+
+    path := scriptListView.GetText(row, 3)
+    SplitPath(path, &scriptName)
+
+    if (scriptName = "")
+        return
+
+    ; Only allow removing external scripts
+    if (!externalScripts.Has(scriptName)) {
+        MsgBox("You can only remove external scripts. To remove scripts from the main folder, delete them manually.",
+            "Information", "Icon!")
+        return
+    }
+
+    ; Confirm removal
+    result := MsgBox("Are you sure you want to remove the external script '" . scriptName . "'?", "Confirm Removal",
+        "YesNo Icon!")
+    if (result = "No")
+        return
+
+    ; Remove from external scripts and enabled scripts
+    externalScripts.Delete(scriptName)
+    enabledScripts.Delete(scriptName)
+
+    ; Update config
+    SaveExternalScriptsToConfig()
+
+    UpdateListView()
+    UpdateIncludeFile()
+    RestartMainScript()
+    statusBar.SetText("Removed external script: " . scriptName)
 }
